@@ -59,9 +59,43 @@ public class ContainerFeature {
         return containerRepository.list(pageableCommand.page());
     }
 
-    public Map<Long, List<Container>> findByInstrumentIdIn(Collection<Long> instrumentIds) {
-        return containerRepository.findByInstrumentIdIn(instrumentIds).stream()
-                .filter(c->c.instrumentId()!=null)
-                .collect(Collectors.groupingBy(Container::instrumentId));
+    public InstrumentContainers getInstrumentContainers(List<Instrument> instruments) {
+        return new InstrumentContainers(containerRepository).of(instruments);
+    }
+
+    public static class InstrumentContainers {
+        private Map<Long, List<Container>> containersByInstrumentId;
+        private final ContainerRepository containerRepository;
+
+        private InstrumentContainers(ContainerRepository containerRepository) {
+            this.containerRepository = containerRepository;
+            this.containersByInstrumentId = Collections.emptyMap();
+        }
+
+        private InstrumentContainers of(@NonNull List<Instrument> instruments) {
+            if (instruments.isEmpty()) {
+                return this;
+            }
+            fetchContainers(instruments);
+            return this;
+        }
+
+        private Map<Long, List<Container>> findByInstrumentIdIn(Collection<Long> instrumentIds) {
+            return containerRepository.findByInstrumentIdIn(instrumentIds).stream()
+                    .filter(c -> c.instrumentId() != null)
+                    .collect(Collectors.groupingBy(Container::instrumentId));
+        }
+
+        private void fetchContainers(List<Instrument> instruments) {
+            Set<Long> ids = instruments.stream()
+                    .map(Instrument::id)
+                    .collect(Collectors.toSet());
+            this.containersByInstrumentId = findByInstrumentIdIn(ids);
+        }
+
+        public Instrument map(Instrument i) {
+            List<Container> containers = containersByInstrumentId.getOrDefault(i.id(), Collections.emptyList());
+            return i.withContainers(containers);
+        }
     }
 }

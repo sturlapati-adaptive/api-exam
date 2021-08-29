@@ -3,7 +3,6 @@ package com.exam.instrument.features;
 import com.exam.common.commands.PageableCommand;
 import com.exam.container.commands.ContainerBulkCreateCmd;
 import com.exam.container.features.ContainerFeature;
-import com.exam.container.models.Container;
 import com.exam.instrument.commands.InstrumentBulkCreateCmd;
 import com.exam.instrument.commands.InstrumentCmd;
 import com.exam.instrument.constants.InstrumentPropertyKey;
@@ -39,9 +38,7 @@ public class InstrumentFeature {
     }
 
     private Instrument withContainers(Instrument instrument) {
-        Map<Long, List<Container>> containersByInstrument = fetchContainers(List.of(instrument));
-        List<Container> containers = containersByInstrument.getOrDefault(instrument.id(), Collections.emptyList());
-        return instrument.withContainers(containers);
+        return containerFeature.getInstrumentContainers(List.of(instrument)).map(instrument);
     }
 
     public Page<Instrument> search(@Nullable InstrumentSearch search, PageableCommand pageable) {
@@ -49,49 +46,32 @@ public class InstrumentFeature {
         Page<Instrument> instruments;
         if (search == null) {
             instruments = instrumentRepository.list(pageParams);
-        }
-        else if (search.name() != null && search.instrumentType() != null) {
-            instruments =instrumentRepository.findByNameAndInstrumentType(search.name(), search.instrumentType(), pageParams);
-        }
-        else if (search.name() != null) {
+        } else if (search.name() != null && search.instrumentType() != null) {
+            instruments = instrumentRepository.findByNameAndInstrumentType(search.name(), search.instrumentType(), pageParams);
+        } else if (search.name() != null) {
             instruments = instrumentRepository.findByName(search.name(), pageParams);
-        }
-        else if (search.instrumentType() != null) {
+        } else if (search.instrumentType() != null) {
             instruments = instrumentRepository.findByInstrumentType(search.instrumentType(), pageParams);
-        }
-        else {
+        } else {
             instruments = Page.empty();
         }
         return withContainers(instruments);
     }
 
     private Page<Instrument> withContainers(Page<Instrument> instruments) {
-        if(instruments.isEmpty()){
+        if (instruments.isEmpty()) {
             return instruments;
         }
-        Map<Long, List<Container>> containersByInstrument = fetchContainers(instruments.getContent());
-        return instruments
-                .map(i -> populateContainers(containersByInstrument, i));
-    }
-
-    public Instrument populateContainers(Map<Long, List<Container>> containersByInstrument, Instrument i) {
-        List<Container> containers = containersByInstrument.getOrDefault(i.id(), Collections.emptyList());
-        return i.withContainers(containers);
-    }
-
-    public Map<Long, List<Container>> fetchContainers(List<Instrument> instruments) {
-        Set<Long> ids = instruments.stream()
-                .map(Instrument::id)
-                .collect(Collectors.toSet());
-        return containerFeature.findByInstrumentIdIn(ids);
+        ContainerFeature.InstrumentContainers ic = containerFeature.getInstrumentContainers(instruments.getContent());
+        return instruments.map(ic::map);
     }
 
     @Transactional
     public List<Instrument> createBulk(@NonNull List<InstrumentBulkCreateCmd> instrumentBulkCreateCmds) {
         List<ContainerBulkCreateCmd> containerBulkCreateCmds = new ArrayList<>();
         List<Instrument> created = new ArrayList<>();
-        for(InstrumentBulkCreateCmd bulkCreateCmd: instrumentBulkCreateCmds) {
-            for(InstrumentCmd instrumentCmd: bulkCreateCmd.instruments()){
+        for (InstrumentBulkCreateCmd bulkCreateCmd : instrumentBulkCreateCmds) {
+            for (InstrumentCmd instrumentCmd : bulkCreateCmd.instruments()) {
                 Instrument instrument = instrumentRepository.save(from(instrumentCmd, bulkCreateCmd.site()));
                 if (instrumentCmd.containers() != null) {
                     ContainerBulkCreateCmd cmd = new ContainerBulkCreateCmd(instrument, instrumentCmd.containers());
@@ -100,10 +80,14 @@ public class InstrumentFeature {
                 created.add(instrument);
             }
         }
-        if(!containerBulkCreateCmds.isEmpty()){
+        if (!containerBulkCreateCmds.isEmpty()) {
             containerFeature.createBulk(containerBulkCreateCmds);
         }
         return created;
+    }
+
+    public SiteInstruments getSiteInstruments(List<Site> sites) {
+        return new SiteInstruments(instrumentRepository, containerFeature).of(sites);
     }
 
     static Instrument from(InstrumentCmd cmd, @Nullable Site site) {
@@ -127,9 +111,53 @@ public class InstrumentFeature {
         return props;
     }
 
-    public Map<Long, List<Instrument>> findBySiteIdIn(Collection<Long> siteIds) {
-        return instrumentRepository.findBySiteIdIn(siteIds).stream()
-                .filter(i->i.siteId()!=null)
-                .collect(Collectors.groupingBy(Instrument::siteId));
+    public static class SiteInstruments {
+        private final InstrumentRepository instrumentRepository;
+        private final ContainerFeature containerFeature;
+        private ContainerFeature.InstrumentContainers instrumentContainers;
+        private Map<Long, List<Instrument>> instrumentsBySiteId;
+
+        private SiteInstruments(InstrumentRepository instrumentRepository, ContainerFeature containerFeature) {
+            this.instrumentRepository = instrumentRepository;
+            this.containerFeature = containerFeature;
+            this.instrumentsBySiteId = Collections.emptyMap();
+        }
+
+        private SiteInstruments of(List<Site> sites) {
+            if (sites.isEmpty()) {
+                return this;
+            }
+            fetchInstruments(sites);
+            fetchContainers();
+            return this;
+        }
+
+        private Map<Long, List<Instrument>> findBySiteIdIn(Collection<Long> siteIds) {
+            return instrumentRepository.findBySiteIdIn(siteIds).stream()
+                    .filter(i -> i.siteId() != null)
+                    .collect(Collectors.groupingBy(Instrument::siteId));
+        }
+
+        private void fetchInstruments(List<Site> sites) {
+            Set<Long> siteIds = sites.stream()
+                    .map(Site::id)
+                    .collect(Collectors.toSet());
+            this.instrumentsBySiteId = findBySiteIdIn(siteIds);
+        }
+
+        private void fetchContainers() {
+            List<Instrument> siteInstruments = instrumentsBySiteId.values().stream()
+                    .flatMap(Collection::stream)
+                    .toList();
+            instrumentContainers = containerFeature.getInstrumentContainers(siteInstruments);
+        }
+
+        public Site map(Site site) {
+            List<Instrument> withContainers = instrumentsBySiteId.getOrDefault(site.id(), Collections.emptyList())
+                    .stream()
+                    .map(instrumentContainers::map)
+                    .toList();
+            return site.withInstruments(withContainers);
+        }
     }
 }
