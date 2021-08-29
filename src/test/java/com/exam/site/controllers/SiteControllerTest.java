@@ -14,8 +14,10 @@ import com.exam.site.repositories.SiteRepository;
 import io.micronaut.core.type.Argument;
 import io.micronaut.data.model.Page;
 import io.micronaut.http.HttpRequest;
+import io.micronaut.http.HttpStatus;
 import io.micronaut.http.client.HttpClient;
 import io.micronaut.http.client.annotation.Client;
+import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.http.uri.UriBuilder;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
@@ -27,8 +29,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @MicronautTest
 class SiteControllerTest {
@@ -133,5 +134,40 @@ class SiteControllerTest {
         List<Site> actual = client.toBlocking().retrieve(HttpRequest.POST("/seed", cmds), Argument.listOf(Site.class));
         assertEquals(cmds.size(), actual.size());
 
+    }
+
+    @Test
+    void should_error_on_create_bulk_when_there_are_duplicate_container_barcodes() {
+        UUID dupeBarcode = UUID.randomUUID();
+        SiteCreateCmd cmd1 = new SiteCreateCmd(
+                "bulk-site-1",
+                Fixtures.address(),
+                List.of(
+                        new InstrumentCmd("ins-1", InstrumentType.Computer, "mac-1", null),
+                        new InstrumentCmd("ins-2", InstrumentType.Freezer, null,
+                                List.of(
+                                        new ContainerCmd(dupeBarcode, "container-1"),
+                                        new ContainerCmd(dupeBarcode, "container-2")
+                                )
+                        )
+                )
+        );
+        SiteCreateCmd cmd2 = new SiteCreateCmd(
+                "bulk-site-2",
+                Fixtures.address(),
+                List.of(
+                        new InstrumentCmd("ins-3", InstrumentType.Computer, "mac-3", null),
+                        new InstrumentCmd("ins-4", InstrumentType.Freezer, null,
+                                List.of(
+                                        new ContainerCmd(UUID.randomUUID(), "container-3"),
+                                        new ContainerCmd(UUID.randomUUID(), "container-4")
+                                )
+                        )
+                )
+        );
+        List<SiteCreateCmd> cmds = List.of(cmd1, cmd2);
+        HttpClientResponseException actual = assertThrows(HttpClientResponseException.class, () -> client.toBlocking().exchange(HttpRequest.POST("/seed", cmds)));
+        assertEquals(HttpStatus.BAD_REQUEST, actual.getStatus());
+        assertTrue( actual.getMessage().contains("Duplicate barcode"));
     }
 }

@@ -6,11 +6,14 @@ import com.exam.site.dtos.SiteSearch;
 import com.exam.site.features.SiteFeature;
 import com.exam.site.models.PageableSite;
 import com.exam.site.models.Site;
+import io.micronaut.data.exceptions.DataAccessException;
 import io.micronaut.data.model.Page;
-import io.micronaut.http.annotation.Body;
-import io.micronaut.http.annotation.Controller;
-import io.micronaut.http.annotation.Get;
-import io.micronaut.http.annotation.Post;
+import io.micronaut.http.HttpRequest;
+import io.micronaut.http.HttpResponse;
+import io.micronaut.http.annotation.Error;
+import io.micronaut.http.annotation.*;
+import io.micronaut.http.hateoas.JsonError;
+import io.micronaut.http.hateoas.Link;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -57,7 +60,21 @@ public class SiteController {
 
     @Post("/seed")
     @Operation(description = "Use this to seed data")
-    public List<Site> create(@Body List<@Valid SiteCreateCmd> cmds) {
-        return siteFeature.createBulk(cmds);
+    public HttpResponse<List<Site>> create(@Body List<@Valid SiteCreateCmd> cmds) {
+        return HttpResponse.created(siteFeature.createBulk(cmds));
+    }
+
+    @Error(exception = DataAccessException.class)
+    public HttpResponse<?> onCreateFailure(HttpRequest<?> request, DataAccessException exception){
+        String msg = Optional.ofNullable(exception.getCause())
+                .map(Throwable::getMessage)
+                .filter(c -> c.contains("duplicate key"))
+                .map(c -> "Duplicate barcode specified")
+                .orElse("Error creating site");
+
+        JsonError error = new JsonError(msg)
+                .link(Link.SELF, Link.of(request.getUri()));
+        return HttpResponse.<JsonError>badRequest()
+                .body(error);
     }
 }

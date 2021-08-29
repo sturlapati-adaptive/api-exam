@@ -5,9 +5,10 @@ import com.exam.instrument.commands.InstrumentCmd;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.annotation.Nullable;
 
+import javax.validation.Valid;
 import java.util.List;
 public record SiteCreateCmd(
         @NonNull String name,
         @NonNull Address shippingAddress,
-        @Nullable List<InstrumentCmd> instruments){
+        @Nullable List<@Valid InstrumentCmd> instruments){
 }
