@@ -60,6 +60,7 @@ public class SiteController {
 
     @Post("/seed")
     @Operation(description = "Use this to seed data")
+    @ApiResponse(responseCode = "201")
     public HttpResponse<List<Site>> create(@Body List<@Valid SiteCreateCmd> cmds) {
         return HttpResponse.created(siteFeature.createBulk(cmds));
     }

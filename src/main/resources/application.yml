@@ -27,3 +27,6 @@ liquibase:
 endpoints:
   health:
     enabled: true
+jackson:
+  serialization:
+    writeDatesAsTimestamps: false
