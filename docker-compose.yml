@@ -1,0 +1,33 @@
+# This is the common file for all moira services (cora, search, receipt-service etc.)
+version: "3.7"
+services:
+  db:
+    image: postgres:12
+    hostname: 'api_exam_db'
+    ports:
+      - "54322:5432"
+    expose:
+      - '54322'
+      - '5432'
+    environment:
+      POSTGRES_PASSWORD: apiexam
+      POSTGRES_USER: apiexam
+      POSTGRES_DB: "api_exam_db"
+    networks:
+      - backend
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    expose:
+      - '8080'
+    environment:
+      APIEXAM_DB_HOST: 'api_exam_db'
+      APIEXAM_DB_PORT: '5432'
+    networks:
+      - backend
+    depends_on:
+      - db
+networks:
+  backend:
+    driver: "bridge"

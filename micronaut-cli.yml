@@ -1,0 +1,6 @@
+applicationType: default
+defaultPackage: com.exam
+testFramework: junit
+sourceLanguage: java
+buildTool: gradle
+features: [annotation-api, app-name, data, data-jdbc, gradle, hibernate-validator, http-client, java, java-application, jdbc-hikari, jib, junit, liquibase, logback, mockito, netty-server, openapi, postgres, readme, shade, testcontainers, yaml]

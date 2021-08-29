@@ -1,0 +1,55 @@
+[
+  {
+    "name": "site-1",
+    "shippingAddress": {
+      "address1": "123 Street",
+      "city": "city-1",
+      "state": "state-1",
+      "zip": "zip-1",
+      "country": "country-1"
+    },
+    "instruments": [
+      {
+        "name": "inst-1",
+        "instrumentType": "Computer",
+        "macAddress": "mac-1"
+      },
+      {
+        "name": "inst-2",
+        "instrumentType": "Freezer",
+        "containers": [
+          {
+            "barcode": "76B023D8-3D32-41EB-B603-8CCA12020EB8",
+            "description": "container-1"
+          },
+          {
+            "barcode": "30648F0B-F7B3-43FF-8F49-371275B528EE",
+            "description": "container-2"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "site-2",
+    "shippingAddress": {
+      "address1": "456 Street",
+      "city": "city-2",
+      "state": "state-2",
+      "zip": "zip-2",
+      "country": "country-2"
+    },
+    "instruments": [
+      {
+        "name": "inst-3",
+        "instrumentType": "Computer",
+        "macAddress": "mac-3"
+      },
+      {
+        "name": "inst-4",
+        "instrumentType": "Computer",
+        "macAddress": "mac-4"
+      }
+    ]
+  }
+]
