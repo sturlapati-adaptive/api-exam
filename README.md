@@ -56,9 +56,13 @@ There are 3 main tables.
    2. A container is assumed to exist independently of an instrument and if it belongs to an instrument then it belongs to only one instrument at any given time
    
 2. Instrument
-   1. There different types of instruments, namely Computer and Freezer
-   2. Different types of instruments have slightly different properties. If we make them as columns then they don't make sense for the different instrument types. Hence, these properties are modeled as JSONB so that they can have arbitrary properties.
-   3. An instrument is assumed to exist independently of a site and if it belongs to a site then it belongs to only one site at any given time.
+   1. There different types of instruments, namely *Computer* and *Freezer*
+   2. An instrument is assumed to exist independently of a site and if it belongs to a site then it belongs to only one site at any given time.
+   3. Different types of instruments have slightly different properties. If we make them as columns then they don't make sense for the different instrument types. Hence, these properties are modeled as JSONB so that they can have arbitrary properties. e.g. 
+```json
+{"macAddress": "1309284948"}
+```
+
 3. Site
    1. Address of a site is modeled as JSONB instead of a separate table as there are no other entities which have this property. So, for simplification it is modeled as JSONB.
 
