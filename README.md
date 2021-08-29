@@ -1,6 +1,7 @@
 ## API Exam
 API to query for resources.
 ## Installation
+[![Docker Image](https://github.com/sturlapati-adaptive/api-exam/actions/workflows/docker-image.yml/badge.svg)](https://github.com/sturlapati-adaptive/api-exam/actions/workflows/docker-image.yml)
 ### Pre-requisites
 1. Docker
 ### Instructions
