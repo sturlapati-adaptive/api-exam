@@ -72,10 +72,11 @@ class InstrumentControllerTest {
         URI uri = UriBuilder.of("").path(expected.id().toString()).build();
         Instrument actual = client.toBlocking().retrieve(HttpRequest.GET(uri), Instrument.class);
         assertNotNull(actual);
-        assertEquals(expected, actual);
+        assertEquals(expected.id(), actual.id());
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void should_find_by_name() {
         URI uri = UriBuilder.of("")
                 .queryParam("name", "freezer-containers-1")
@@ -92,6 +93,7 @@ class InstrumentControllerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void should_find_by_type_with_paging() {
         URI uri = UriBuilder.of("")
                 .queryParam("instrumentType", InstrumentType.Computer)

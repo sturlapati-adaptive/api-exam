@@ -88,6 +88,7 @@ class SiteControllerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void should_find_by_name() {
         Site expected = savedSites.get(0);
         URI uri = UriBuilder.of("")
@@ -129,7 +130,7 @@ class SiteControllerTest {
                 )
         );
         List<SiteCreateCmd> cmds = List.of(cmd1, cmd2);
-        List<Site> actual = client.toBlocking().retrieve(HttpRequest.POST("", cmds), Argument.listOf(Site.class));
+        List<Site> actual = client.toBlocking().retrieve(HttpRequest.POST("/seed", cmds), Argument.listOf(Site.class));
         assertEquals(cmds.size(), actual.size());
 
     }
