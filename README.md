@@ -13,6 +13,8 @@ API to query for resources.
 {"status":"UP"}
 ```
 ## Build from source *(Optional)*
+[![Build and Tests](https://github.com/sturlapati-adaptive/api-exam/actions/workflows/gradle.yml/badge.svg)](https://github.com/sturlapati-adaptive/api-exam/actions/workflows/gradle.yml)
+
 If you prefer to build the application and/or run the test cases. Use the following instructions.
 ### Pre-requisites
 1. JDK 16
